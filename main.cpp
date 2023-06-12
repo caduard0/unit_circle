@@ -12,8 +12,139 @@ const char FONT_PATH[] = "fonts/Roboto-Regular.ttf";
 const int UNIT_CIRCLE_RADIUS = 150;
 const float WHEEL_STRENGTH = 5;
 
-int main()
-{
+void WithTrigFunctions();
+void WithoutTrigFunctions();
+
+int main() {
+    WithTrigFunctions();
+    //WithoutTrigFunctions();
+}
+
+void WithoutTrigFunctions() {
+    sf::RenderWindow window;
+    // create the window with size, title and style
+    window.create(sf::VideoMode(WINDOW_SIZE.x, WINDOW_SIZE.y), "Window", sf::Style::None);
+
+    // activates verticalsync
+    window.setVerticalSyncEnabled(VSYNC);
+
+    sf::Vector2f center = sf::Vector2f(WINDOW_SIZE.x/2, WINDOW_SIZE.y/2);
+
+    // unit circle
+    sf::CircleShape unitCircle(UNIT_CIRCLE_RADIUS);
+    unitCircle.setPosition(center.x - UNIT_CIRCLE_RADIUS, center.y - UNIT_CIRCLE_RADIUS);
+    unitCircle.setFillColor(sf::Color::Black);
+    unitCircle.setOutlineColor(sf::Color(100, 100, 100));
+    unitCircle.setOutlineThickness(1);
+
+    float pointRadius = 5;
+    sf::CircleShape unitCirclePoint(pointRadius);
+    unitCirclePoint.setFillColor(sf::Color::White);
+
+    sf::Vector2f windowMousePosition;
+    sf::Vector2f calcMousePosition;
+
+    // lines
+    sf::Vertex tangentLine[] =
+    {
+        sf::Vertex(sf::Vector2f(center.x, 0)),
+        sf::Vertex(sf::Vector2f(0, center.y))
+    };
+    sf::Vertex sineLine[] =
+    {
+        sf::Vertex(sf::Vector2f(0, 0)),
+        sf::Vertex(sf::Vector2f(0, 0))
+    };
+    sf::Vertex cosineLine[] =
+    {
+        sf::Vertex(sf::Vector2f(0, 0)),
+        sf::Vertex(sf::Vector2f(0, 0))
+    };
+
+    // start window loop
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            switch (event.type) {
+                case sf::Event::Closed :
+                    window.close();
+                    break;
+                
+                default:
+                    break;
+            }
+        }
+
+        // get inputs and center on window
+        windowMousePosition = (sf::Vector2f) sf::Mouse::getPosition(window);
+        calcMousePosition = windowMousePosition - center;
+
+        // get position in circle
+        sf::Vector2f unitPosition = sf::Vector2f(0, 0);
+
+        float b_a = calcMousePosition.y/calcMousePosition.x;
+        unitPosition.x = 1/(sqrt(pow(b_a, 2) + 1));
+        unitPosition.y = b_a * unitPosition.x;
+
+        unitPosition = calcMousePosition.x > 0 ? sf::Vector2f(unitPosition.x, unitPosition.y) : -sf::Vector2f(unitPosition.x, unitPosition.y);
+
+        // set sine cosine
+        float sine = unitPosition.y;
+        float cosine = unitPosition.x;
+        
+        // calc tangent points
+        sf::Vector2f tangentIntersections = sf::Vector2f(0, 0);
+
+        tangentIntersections.y = pow(cosine, 2)/sine + sine; // == 1/sine
+        tangentIntersections.x = pow(sine, 2)/cosine + cosine; // == 1/cosine
+
+        // set tan cot
+        float tangent = sqrt(pow(cosine - tangentIntersections.x, 2) + pow(sine,2)); // == sine/cosine
+        float cotangent = sqrt(pow(sine - tangentIntersections.y, 2) + pow(cosine,2)); // == cosine/sine
+
+        // set sec csc
+        float secant = tangentIntersections.x;
+        float cosecant = tangentIntersections.y;
+
+        window.clear(sf::Color::Black);
+        
+        // set lines
+        tangentLine[0].position.y = tangentIntersections.y * (float)UNIT_CIRCLE_RADIUS + center.y;
+        tangentLine[1].position.x = tangentIntersections.x * (float)UNIT_CIRCLE_RADIUS + center.x;
+        tangentLine[0].color = sf::Color(0, 255, 0);
+        tangentLine[1].color = tangentLine[0].color;
+
+        sineLine[0].position.x = cosine * (float)UNIT_CIRCLE_RADIUS + center.x;
+        sineLine[1].position.x = cosine  * (float)UNIT_CIRCLE_RADIUS + center.x;
+        sineLine[0].position.y = sine  * (float)UNIT_CIRCLE_RADIUS + center.y;
+        sineLine[1].position.y = center.y;
+        sineLine[0].color = sf::Color(255, 0, 0);
+        sineLine[1].color = sineLine[0].color;
+
+        cosineLine[0].position.y = sine * (float)UNIT_CIRCLE_RADIUS + center.y;
+        cosineLine[1].position.y = sine  * (float)UNIT_CIRCLE_RADIUS + center.y;
+        cosineLine[0].position.x = cosine  * (float)UNIT_CIRCLE_RADIUS + center.x;
+        cosineLine[1].position.x = center.x;
+        cosineLine[0].color = sf::Color(0, 0, 255);
+        cosineLine[1].color = cosineLine[0].color;
+
+        unitCirclePoint.setPosition(unitPosition * (float)UNIT_CIRCLE_RADIUS - sf::Vector2f(pointRadius, pointRadius) + center);
+
+        // drawing
+        window.draw(unitCircle);
+
+        window.draw(tangentLine, 2, sf::Lines);
+        window.draw(sineLine, 2, sf::Lines);
+        window.draw(cosineLine, 2, sf::Lines);
+
+        window.draw(unitCirclePoint);
+
+        // display
+        window.display();
+    }
+}
+
+void WithTrigFunctions() {
     sf::RenderWindow window;
     // create the window with size, title and style
     window.create(sf::VideoMode(WINDOW_SIZE.x, WINDOW_SIZE.y), "Window", sf::Style::None);
@@ -158,6 +289,8 @@ int main()
 
                 case sf::Event::MouseWheelScrolled :
                     mouseWheelOffset += event.mouseWheelScroll.delta * WHEEL_STRENGTH;
+                    if (UNIT_CIRCLE_RADIUS + mouseWheelOffset < 2) mouseWheelOffset = 2 - UNIT_CIRCLE_RADIUS;
+                    else if (UNIT_CIRCLE_RADIUS + mouseWheelOffset > 350) mouseWheelOffset = 350 - UNIT_CIRCLE_RADIUS;
                     break;
 
                 default:
@@ -344,6 +477,4 @@ int main()
         // display draw
         window.display();
     }
-
-    return 0;
 }
